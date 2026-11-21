@@ -1,26 +1,332 @@
 @import "tailwindcss";
 
+/* Class-based dark mode so the theme toggle can override the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* ------------------------------------------------------------------ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7fb;
+  --surface: #ffffff;
+  --surface-muted: #eef1f7;
+  --surface-elevated: #ffffff;
+  --border: #e2e6ef;
+  --border-strong: #cdd3e1;
+  --foreground: #0b1024;
+  --muted-foreground: #586178;
+  --primary: #6d4aff;
+  --primary-hover: #5b37f5;
+  --primary-foreground: #ffffff;
+  --primary-soft: #efebff;
+  --accent: #2f6bff;
+  --accent-soft: #e8efff;
+  --success: #0f9d6b;
+  --warning: #b7791f;
+  --danger: #dc3545;
+  --ring: #6d4aff;
+  --shadow-color: 222 47% 11%;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #060918;
+  --surface: #0b1024;
+  --surface-muted: #11172f;
+  --surface-elevated: #141b37;
+  --border: #1d2544;
+  --border-strong: #2a3459;
+  --foreground: #e9ecf8;
+  --muted-foreground: #98a2bd;
+  --primary: #8b6dff;
+  --primary-hover: #9d83ff;
+  --primary-foreground: #0b0720;
+  --primary-soft: #1b1640;
+  --accent: #5b8cff;
+  --accent-soft: #111e44;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --ring: #a28bff;
+  --shadow-color: 230 60% 2%;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-ring: var(--ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --radius-card: 1.125rem;
+
+  --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.04), 0 4px 16px -4px hsl(var(--shadow-color) / 0.08);
+  --shadow-lift: 0 2px 4px hsl(var(--shadow-color) / 0.05), 0 18px 40px -12px hsl(var(--shadow-color) / 0.18);
+  --shadow-glow: 0 10px 40px -10px rgb(109 74 255 / 0.45);
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-page-in: page-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-gradient: gradient-shift 14s ease infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-float-slow: float 12s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes page-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes gradient-shift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -18px, 0);
+    }
   }
 }
 
-body {
-  background: var(--background);
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 30%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  [id] {
+    scroll-margin-top: 6rem;
+  }
+  /* Grids default to one shrinkable column so long content can't overflow on mobile.
+     grid-cols-* utilities (utilities layer) still override this. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilities                                                           */
+/* ------------------------------------------------------------------ */
+
+@utility container-site {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 2rem;
+  }
+}
+
+@utility text-gradient {
+  background-image: linear-gradient(100deg, var(--primary) 0%, var(--accent) 55%, #22b8cf 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--border) 70%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--border) 70%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+@utility bg-brand-gradient {
+  background-image: linear-gradient(120deg, #6d4aff, #2f6bff 50%, #7c3aed);
+  background-size: 200% 200%;
+}
+
+@utility card-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--surface-muted) 0%,
+    color-mix(in oklab, var(--surface-muted) 55%, var(--border-strong)) 50%,
+    var(--surface-muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+  border-radius: 0.5rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Long-form content typography                                        */
+/* ------------------------------------------------------------------ */
+
+.prose-content {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: color-mix(in oklab, var(--foreground) 88%, var(--muted-foreground));
+}
+.prose-content > * + * {
+  margin-top: 1.25rem;
+}
+.prose-content h2 {
+  margin-top: 3rem;
+  font-size: 1.625rem;
+  line-height: 1.3;
+  font-weight: 650;
+  letter-spacing: -0.02em;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+.prose-content h3 {
+  margin-top: 2rem;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+.prose-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.prose-content a:hover {
+  text-decoration-thickness: 2px;
+}
+.prose-content strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.prose-content ul,
+.prose-content ol {
+  padding-left: 1.4rem;
+}
+.prose-content ul {
+  list-style: disc;
+}
+.prose-content ol {
+  list-style: decimal;
+}
+.prose-content li + li {
+  margin-top: 0.5rem;
+}
+.prose-content li::marker {
+  color: var(--primary);
+}
+.prose-content :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.375rem;
+}
+.prose-content blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: var(--muted-foreground);
+}
+.prose-content pre {
+  overflow-x: auto;
+  border-radius: 0.875rem;
+  padding: 1.1rem 1.25rem;
+  background: #0b1024;
+  color: #e3e7f7;
+  border: 1px solid #1d2544;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+.prose-content hr {
+  border-color: var(--border);
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion                                                      */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,0 +1,16 @@
+# Runs the MongoDB backup once. Triggered daily by webaiautomation-backup.timer.
+# The script is installed root-owned at /usr/local/sbin (not run from the app
+# checkout, which the webapp user can modify).
+
+[Unit]
+Description=WebAIAutomation MongoDB backup
+After=mongod.service
+Requires=mongod.service
+
+[Service]
+Type=oneshot
+# Optional retention: uncomment to delete archives older than 30 days.
+# Environment=RETENTION_DAYS=30
+ExecStart=/usr/local/sbin/webaiautomation-backup
+Nice=10
+IOSchedulingClass=idle

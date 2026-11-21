@@ -1,0 +1,40 @@
+# systemd unit for the WebAIAutomation Next.js server.
+# Install: sudo cp deploy/systemd/webaiautomation.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now webaiautomation
+#
+# Environment: Next.js loads /srv/webaiautomation/.env.production.local itself
+# (owner webapp, mode 600). Nothing secret lives in this unit file.
+
+[Unit]
+Description=WebAIAutomation (Next.js)
+Documentation=file:///srv/webaiautomation/docs/ORACLE-CLOUD-DEPLOYMENT.md
+After=network-online.target mongod.service
+Wants=network-online.target mongod.service
+
+[Service]
+Type=simple
+User=webapp
+Group=webapp
+WorkingDirectory=/srv/webaiautomation
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+# Listen on localhost only; nginx is the public entry point.
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -p 3000 -H 127.0.0.1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+
+# Hardening: read-only system, writable app cache only.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/webaiautomation/.next
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

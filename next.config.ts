@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  poweredByHeader: false,
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   turbopack: {
     rules: {
       "*.css": {
@@ -11,6 +14,30 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  /**
+   * Add 301 redirects here if legacy URLs from a previous version of the site
+   * need to be preserved, e.g. { source: "/old-post", destination: "/blog/new-post", permanent: true }.
+   */
+  async redirects() {
+    return [];
+  },
+  /**
+   * Baseline security headers for every response. HSTS is added by nginx
+   * once HTTPS is live (see docs/ORACLE-CLOUD-DEPLOYMENT.md).
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
+        ],
+      },
+    ];
   },
 };
 
