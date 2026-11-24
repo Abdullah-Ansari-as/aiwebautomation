@@ -9,7 +9,7 @@ import type { Service } from "@/data/services";
 import { trackAttrs } from "@/lib/analytics";
 
 /** Homepage block promoting the done-for-you automation services. */
-export function ServicesSection({ services, fromPrice }: { services: Service[]; fromPrice: number }) {
+export function ServicesSection({ services, fromPrice, monthlyFrom }: { services: Service[]; fromPrice: number; monthlyFrom: number }) {
   return (
     <section className="container-site py-20 sm:py-24" aria-labelledby="home-services-heading">
       <SectionHeader
@@ -42,8 +42,9 @@ export function ServicesSection({ services, fromPrice }: { services: Service[]; 
       <Reveal className="mt-8 flex flex-col gap-6 rounded-[1.5rem] border border-primary/25 bg-gradient-to-br from-primary-soft via-surface to-surface p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xl font-semibold tracking-tight text-foreground">
-            Automation projects from <span className="text-gradient">${fromPrice}</span>
+            Monthly automation plans from <span className="text-gradient">${monthlyFrom}/mo</span>
           </p>
+          <p className="mt-1 text-sm text-muted-foreground">or one-time projects from ${fromPrice}</p>
           <ul className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-5">
             <li className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" aria-hidden="true" /> Fixed written quote
@@ -57,8 +58,8 @@ export function ServicesSection({ services, fromPrice }: { services: Service[]; 
           </ul>
         </div>
         <div className="flex flex-wrap gap-3">
-          <LinkButton href="/services#quote" size="lg" {...trackAttrs("consultation_click", { location: "home-services" })}>
-            Hire us <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          <LinkButton href="/services#monthly-plans" size="lg" {...trackAttrs("consultation_click", { location: "home-services" })}>
+            See plans <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </LinkButton>
           <WhatsAppButton location="home-services" />
         </div>

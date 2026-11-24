@@ -1,12 +1,25 @@
 /**
- * Provider-agnostic conversion events. No analytics provider is bundled:
- * events are forwarded to GA4 (`gtag`), Google Tag Manager (`dataLayer`)
- * and/or Plausible when one of them has been added to the site, and are a
- * silent no-op otherwise.
- *
- * Events: services_page_view, consultation_click, inquiry_submit,
- * whatsapp_click, affiliate_click.
+ * Conversion events. Every event in FIRST_PARTY_EVENTS is counted by the
+ * built-in, cookieless analytics (POST /api/track → admin Analytics page).
+ * Events are also forwarded to GA4 (`gtag`), Google Tag Manager
+ * (`dataLayer`) and/or Plausible if one of them is added to the site later.
  */
+
+export const FIRST_PARTY_EVENTS = ["services_page_view", "consultation_click", "inquiry_submit", "whatsapp_click", "affiliate_click", "newsletter_signup", "booking_click"] as const;
+
+/** Sends a small JSON beacon to the first-party analytics endpoint. Never throws. */
+export function sendBeacon(payload: Record<string, string>): void {
+  try {
+    const body = JSON.stringify(payload);
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      navigator.sendBeacon("/api/track", new Blob([body], { type: "application/json" }));
+    } else {
+      void fetch("/api/track", { method: "POST", body, keepalive: true, headers: { "Content-Type": "application/json" } }).catch(() => {});
+    }
+  } catch {
+    // Analytics must never break the page.
+  }
+}
 
 export type TrackProps = Record<string, string | number | boolean | undefined>;
 
@@ -21,6 +34,7 @@ declare global {
 export function track(event: string, props: TrackProps = {}): void {
   if (typeof window === "undefined") return;
   const clean = Object.fromEntries(Object.entries(props).filter(([, v]) => v !== undefined)) as Record<string, string | number | boolean>;
+  if ((FIRST_PARTY_EVENTS as readonly string[]).includes(event)) sendBeacon({ type: "event", name: event });
   try {
     if (typeof window.gtag === "function") window.gtag("event", event, clean);
     else if (Array.isArray(window.dataLayer)) window.dataLayer.push({ event, ...clean });

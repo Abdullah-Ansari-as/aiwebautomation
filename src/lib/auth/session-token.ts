@@ -4,12 +4,19 @@
  *
  * The signing key is derived from AUTH_SECRET *and* ADMIN_PASSWORD, so
  * changing either one immediately invalidates every existing session.
+ * Team-member sessions also carry a `sv` (session version) that the server
+ * compares with the database, so a password reset, role change or
+ * deactivation signs that person out straight away.
  */
+
+import type { AdminRole } from "./roles";
 
 export const SESSION_COOKIE = "waa_admin_session";
 /** Secrets shorter than this are treated as "not configured". */
 export const MIN_AUTH_SECRET_LENGTH = 32;
 export const MIN_ADMIN_PASSWORD_LENGTH = 12;
+/** Subject used for the environment-defined owner account. */
+export const SUPERADMIN_SUBJECT = "superadmin";
 
 /**
  * Key material for signing sessions, or null when admin auth isn't
@@ -22,8 +29,16 @@ export function sessionSigningKey(secret: string | undefined, password: string |
 /** 12 hours. */
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
-interface SessionPayload {
-  v: 1;
+export interface SessionClaims {
+  /** "superadmin" or the team member's user id (24 hex characters). */
+  sub: string;
+  role: AdminRole;
+  /** Session version; must match the user's current version in the database. */
+  sv: number;
+}
+
+export interface SessionPayload extends SessionClaims {
+  v: 2;
   iat: number;
   exp: number;
 }
@@ -48,26 +63,34 @@ function hmacKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 }
 
-export async function createSessionToken(secret: string, now = Date.now()): Promise<string> {
+const DEFAULT_CLAIMS: SessionClaims = { sub: SUPERADMIN_SUBJECT, role: "superadmin", sv: 1 };
+
+export async function createSessionToken(secret: string, claims: SessionClaims = DEFAULT_CLAIMS, now = Date.now()): Promise<string> {
   const iat = Math.floor(now / 1000);
-  const payload: SessionPayload = { v: 1, iat, exp: iat + SESSION_MAX_AGE_SECONDS };
+  const payload: SessionPayload = { v: 2, sub: claims.sub, role: claims.role, sv: claims.sv, iat, exp: iat + SESSION_MAX_AGE_SECONDS };
   const body = toBase64Url(encoder.encode(JSON.stringify(payload)));
   const signature = await crypto.subtle.sign("HMAC", await hmacKey(secret), encoder.encode(body));
   return `${body}.${toBase64Url(new Uint8Array(signature))}`;
 }
 
-/** True only for an untampered, unexpired token signed with `secret`. */
-export async function verifySessionToken(token: string | undefined, secret: string, now = Date.now()): Promise<boolean> {
-  if (!token || token.length > 512) return false;
+const VALID_ROLES = new Set<AdminRole>(["superadmin", "admin", "viewer"]);
+
+/** The payload of an untampered, unexpired token signed with `secret`; otherwise null. */
+export async function verifySessionToken(token: string | undefined, secret: string, now = Date.now()): Promise<SessionPayload | null> {
+  if (!token || token.length > 1024) return null;
   const [body, signature, extra] = token.split(".");
-  if (!body || !signature || extra !== undefined) return false;
+  if (!body || !signature || extra !== undefined) return null;
   try {
     // crypto.subtle.verify compares in constant time.
     const valid = await crypto.subtle.verify("HMAC", await hmacKey(secret), fromBase64Url(signature), encoder.encode(body));
-    if (!valid) return false;
+    if (!valid) return null;
     const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(body))) as Partial<SessionPayload>;
-    return payload.v === 1 && typeof payload.exp === "number" && payload.exp > Math.floor(now / 1000);
+    if (payload.v !== 2 || typeof payload.exp !== "number" || payload.exp <= Math.floor(now / 1000)) return null;
+    if (typeof payload.sub !== "string" || !VALID_ROLES.has(payload.role as AdminRole) || typeof payload.sv !== "number") return null;
+    // Only the environment owner may carry the superadmin role.
+    if ((payload.role === "superadmin") !== (payload.sub === SUPERADMIN_SUBJECT)) return null;
+    return payload as SessionPayload;
   } catch {
-    return false;
+    return null;
   }
 }

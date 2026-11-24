@@ -4,6 +4,7 @@ import { inject } from "vitest";
 
 export const TEST_AUTH_SECRET = "test-only-secret-0123456789abcdefghijklmnop";
 export const TEST_ADMIN_PASSWORD = "test-only-admin-password";
+export const TEST_ADMIN_EMAIL = "owner@example.com";
 
 /**
  * Points the app at a fresh, uniquely named test database. Call at the top of
@@ -16,6 +17,7 @@ export function setupTestDatabase(): { uri: string; dbName: string } {
   process.env.MONGODB_DB_NAME = dbName;
   process.env.AUTH_SECRET = TEST_AUTH_SECRET;
   process.env.ADMIN_PASSWORD = TEST_ADMIN_PASSWORD;
+  process.env.ADMIN_EMAIL = TEST_ADMIN_EMAIL;
   delete process.env.RESEND_API_KEY;
   delete process.env.EMAIL_FROM;
   delete process.env.LEADS_NOTIFY_EMAIL;

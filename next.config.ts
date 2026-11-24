@@ -20,7 +20,14 @@ const nextConfig: NextConfig = {
    * need to be preserved, e.g. { source: "/old-post", destination: "/blog/new-post", permanent: true }.
    */
   async redirects() {
-    return [];
+    return [
+      // Old demo admin sections, now combined into the content library.
+      { source: "/admin/tools", destination: "/admin/content", permanent: false },
+      { source: "/admin/articles", destination: "/admin/content?tab=articles", permanent: false },
+      { source: "/admin/categories", destination: "/admin/content?tab=categories", permanent: false },
+      // Browsers still ask for /favicon.ico; the site icon is app/icon.svg.
+      { source: "/favicon.ico", destination: "/icon.svg", permanent: true },
+    ];
   },
   /**
    * Baseline security headers for every response. HSTS is added by nginx

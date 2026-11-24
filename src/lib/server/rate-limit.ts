@@ -162,6 +162,29 @@ function consumeInMemory(key: string, limit: number, windowSeconds: number): Rat
   return { allowed: entry.count <= limit, retryAfterSeconds: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)), source: "memory" };
 }
 
+/**
+ * Read-only check: is `key` already at or over `limit` in its current window?
+ * Used with "count only failures" limits (e.g. failed sign-ins per email),
+ * where the counter is consumed only after a failed attempt.
+ */
+export async function isRateLimited(key: string, limit: number): Promise<{ limited: boolean; retryAfterSeconds: number }> {
+  const now = Date.now();
+  const fromMemory = memory.get(key);
+  if (fromMemory && fromMemory.resetAt > now && fromMemory.count >= limit) {
+    return { limited: true, retryAfterSeconds: Math.max(1, Math.ceil((fromMemory.resetAt - now) / 1000)) };
+  }
+  if (!isDatabaseConfigured() || now < outage.retryDatabaseAt) return { limited: false, retryAfterSeconds: 0 };
+  try {
+    const doc = await (await rateLimitsCollection()).findOne({ _id: key });
+    if (doc && doc.expiresAt.getTime() > now && doc.count >= limit) {
+      return { limited: true, retryAfterSeconds: Math.max(1, Math.ceil((doc.expiresAt.getTime() - now) / 1000)) };
+    }
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) throw error;
+  }
+  return { limited: false, retryAfterSeconds: 0 };
+}
+
 /** Test-only hooks. Not used by the application. */
 export const rateLimitTestHooks = {
   reset(): void {

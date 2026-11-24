@@ -168,6 +168,70 @@ export const services: Service[] = [
   },
 ];
 
+/**
+ * Monthly retainer plans — the recurring-revenue offer. Prices are USD per
+ * month; review the scope so it matches what you will deliver each month.
+ */
+export interface MonthlyPlan {
+  /** Matches a value in SERVICE_OPTIONS so CTAs preselect it in the quote form. */
+  id: "automation-care" | "ai-lead-response" | "growth-partner";
+  name: string;
+  monthlyPrice: number;
+  setupFee?: number;
+  budget: "monthly-under-300" | "monthly-300-600" | "monthly-600-plus";
+  bestFor: string;
+  includes: string[];
+  highlighted?: boolean;
+}
+
+export const monthlyPlans: MonthlyPlan[] = [
+  {
+    id: "automation-care",
+    name: "Automation Care",
+    monthlyPrice: 149,
+    budget: "monthly-under-300",
+    bestFor: "Keep the automations you already have running smoothly",
+    includes: [
+      "Monitoring and failure alerts for your workflows",
+      "Fixes when an app, API or form changes",
+      "Up to 2 small changes or additions each month",
+      "Monthly health report",
+      "Email support — reply within one business day",
+    ],
+  },
+  {
+    id: "ai-lead-response",
+    name: "AI Lead Response",
+    monthlyPrice: 299,
+    setupFee: 499,
+    budget: "monthly-300-600",
+    bestFor: "Answer every enquiry in minutes — day and night",
+    includes: [
+      "AI assistant on your website, trained on your services and FAQs",
+      "Instant email follow-up for every new lead",
+      "Leads added to your CRM or Google Sheet automatically",
+      "Review requests sent after each job",
+      "Monthly report: leads, response times and bookings",
+      "Hosting, monitoring and improvements included",
+    ],
+    highlighted: true,
+  },
+  {
+    id: "growth-partner",
+    name: "Growth Partner",
+    monthlyPrice: 599,
+    budget: "monthly-600-plus",
+    bestFor: "An automation team on call, every month",
+    includes: [
+      "Everything in AI Lead Response",
+      "Up to 10 hours of new automation work each month",
+      "CRM, email marketing and reporting automations",
+      "Priority support and a monthly strategy call",
+      "Cancel any time with 30 days' notice",
+    ],
+  },
+];
+
 export interface PricingPackage {
   id: "starter" | "growth" | "business";
   name: string;
@@ -265,6 +329,16 @@ export const useCases: { title: string; icon: IconKey; examples: string[] }[] = 
 ];
 
 export const serviceFaqs: { question: string; answer: string }[] = [
+  {
+    question: "How do the monthly plans work?",
+    answer:
+      "You pay a fixed amount each month (plus a one-time setup fee where shown). We set everything up, keep it running, fix issues and make improvements as part of the plan. You can change plans or cancel with 30 days' notice — there are no long contracts.",
+  },
+  {
+    question: "How can I pay from the US, UK or Australia?",
+    answer:
+      "Each month you receive an invoice by email with a secure link. You can pay by card or bank transfer through the payment link on the invoice (for example Payoneer or Wise), in USD, GBP, AUD or EUR.",
+  },
   {
     question: "Why are the prices shown as “from”?",
     answer:

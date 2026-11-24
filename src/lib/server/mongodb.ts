@@ -1,5 +1,5 @@
 import "server-only";
-import { MongoClient, type Collection, type Db, type ObjectId } from "mongodb";
+import { MongoClient, type Collection, type Db, type Document, type ObjectId } from "mongodb";
 import { COLLECTIONS, ensureIndexes } from "../../../db/schema.mjs";
 import type { BudgetValue, ContactMethodValue, InquiryKind, LeadStatus } from "@/lib/inquiry-options";
 import { logServerError } from "./log";
@@ -125,6 +125,13 @@ export async function leadNotesCollection(): Promise<Collection<LeadNoteDocument
 
 export async function rateLimitsCollection(): Promise<Collection<RateLimitDocument>> {
   return (await getDb()).collection<RateLimitDocument>(COLLECTIONS.rateLimits);
+}
+
+export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
+
+/** Typed handle to any collection declared in db/schema.mjs. */
+export async function getCollection<T extends Document>(name: CollectionName): Promise<Collection<T>> {
+  return (await getDb()).collection<T>(name);
 }
 
 /** Closes the shared client (tests and scripts). The next call reconnects. */

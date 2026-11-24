@@ -62,10 +62,3 @@ export function Card({ title, action, children, className }: { title?: string; a
   );
 }
 
-export function SampleTag() {
-  return <span className="rounded-full border border-warning/30 bg-warning/10 px-2 py-0.5 text-[0.7rem] font-medium text-warning">Sample data</span>;
-}
-
-export const tableClass = "w-full text-left text-sm";
-export const thClass = "px-5 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
-export const tdClass = "px-5 py-3.5 align-middle";

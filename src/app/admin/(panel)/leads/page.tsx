@@ -1,8 +1,9 @@
-import { ChevronRight, Inbox } from "lucide-react";
+import { ChevronRight, Download, Inbox } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { linkButtonOutline } from "@/components/admin/admin-kit";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { DatabaseSetupNotice, LeadStatusBadge } from "@/components/admin/lead-ui";
 import { Skeleton } from "@/components/shared/skeleton";
@@ -16,7 +17,15 @@ export const metadata: Metadata = { title: "Leads" };
 export default function LeadsPage({ searchParams }: PageProps<"/admin/leads">) {
   return (
     <>
-      <AdminPageHeader title="Leads" description="Service quote requests and sponsor inquiries sent from the website." />
+      <AdminPageHeader
+        title="Leads"
+        description="Service quote requests and sponsor inquiries sent from the website."
+        action={
+          <a href="/admin/leads/export" className={linkButtonOutline} download>
+            <Download className="h-4 w-4" aria-hidden="true" /> Export CSV
+          </a>
+        }
+      />
       <Suspense fallback={<LeadsFallback />}>
         <LeadsList searchParams={searchParams} />
       </Suspense>

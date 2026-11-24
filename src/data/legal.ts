@@ -44,8 +44,11 @@ export const infoPages: InfoPage[] = [
           list([
             "**Free utilities:** text you enter into tools such as the Word Counter, JSON Formatter or Text Summarizer is processed in your browser and is not sent to our servers.",
             "**Service and sponsorship inquiries:** when you send the quote form on our [Services](/services) page or the sponsorship form on our [Advertise](/advertise) page, we store the details you provide (name, email, company, website, phone number if given, the service or option you chose, budget range, project description and preferred contact method) so we can respond and manage your request. A notification containing your inquiry is emailed to our team through our email delivery provider **[Resend — confirm provider]**. We keep inquiries for **[define retention period]** and you can ask us to delete yours at any time.",
-            "**Abuse prevention:** with each inquiry we store a one-way hashed (non-reversible) version of your IP address and your browser's user-agent string, and we count recent submissions to limit spam. We do not store your raw IP address with your inquiry.",
-            "**Other forms:** the contact, newsletter and tool submission forms currently run in demo mode. They validate your input in the browser but do not transmit or store it.",
+            "**Abuse prevention:** with each form submission we store a one-way hashed (non-reversible) version of your IP address and your browser's user-agent string, and we count recent submissions to limit spam. We do not store your raw IP address.",
+            "**Contact form:** when you send a message through our [Contact](/contact) page we store your name, email, chosen topic and message so we can reply, and email a copy to our team. We keep messages for **[define retention period]**.",
+            "**Newsletter:** if you subscribe (and tick the consent box), we store your email address, the date you subscribed and the page you signed up on. Every newsletter email includes a one-click unsubscribe link; after unsubscribing we keep only a record that you opted out, and you can ask us to delete it entirely.",
+            "**Tool submissions:** when you suggest a tool through our [Submit a tool](/submit-tool) page we store the tool details and your email so our editors can review it and contact you about it.",
+            "**Clients:** if you become a client, we store your business contact and billing details, the plan you chose and your invoices and payment records, as needed to provide the service and to meet accounting and tax obligations.",
             "**Preferences:** your light/dark theme choice is saved in your browser's local storage so the site remembers it. It never leaves your device.",
             "**Server logs:** our hosting provider may automatically record technical data such as IP address, browser type and requested pages to operate and secure the service. **[Confirm hosting provider and retention period.]**",
           ]),
@@ -55,7 +58,8 @@ export const infoPages: InfoPage[] = [
         id: "cookies-and-analytics",
         heading: "Cookies and analytics",
         blocks: [
-          p("The website does not currently set advertising cookies or use third-party analytics. The only cookie we set is a strictly necessary session cookie for site administrators when they sign in to the admin area; it is never set for visitors. If we add analytics, advertising or similar technologies in future, this policy will be updated first and, where required, we will ask for your consent."),
+          p("The website does not set advertising cookies or use third-party analytics, and no cookies are set for visitors. The only cookie we set is a strictly necessary session cookie for site administrators when they sign in to the admin area."),
+          p("We use our own privacy-friendly, cookieless statistics to understand which pages are useful: for each page view we count the page address, the referring website (if any) and a few button clicks (such as quote requests). To estimate unique visitors we use a one-way hash of your IP address and browser that changes every day and is deleted after two days, so you can't be identified or tracked across days or websites. Statistics are stored as daily totals and kept for about 13 months. If we add advertising or third-party analytics in future, this policy will be updated first and, where required, we will ask for your consent."),
         ],
       },
       {

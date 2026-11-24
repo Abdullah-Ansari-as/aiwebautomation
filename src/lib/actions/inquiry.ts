@@ -15,6 +15,8 @@ import {
 } from "@/lib/inquiry-options";
 import { cleanText, countLinks, normalizeEmail, normalizePhone, normalizeWebsite } from "@/lib/sanitize";
 import { notifyNewLead } from "@/lib/server/lead-notifications";
+import { logActivity } from "@/lib/server/activity";
+import { looksAutomated, safeSourcePath } from "@/lib/server/form-guard";
 import { createLead, type NewLead } from "@/lib/server/leads";
 import { logServerError } from "@/lib/server/log";
 import { isDatabaseConfigured } from "@/lib/server/mongodb";
@@ -22,12 +24,6 @@ import { consumeRateLimit } from "@/lib/server/rate-limit";
 import { getClientIp } from "@/lib/server/request";
 import { hashIdentifier } from "@/lib/server/secrets";
 
-/** Name of the hidden honeypot input. Real visitors never see or fill it. */
-const HONEYPOT_FIELD = "hp_extra_info";
-/** Submissions faster than this after the form rendered are treated as bots. */
-const MIN_FILL_TIME_MS = 3_000;
-/** A form left open longer than this is treated as a replayed/forged timestamp. */
-const MAX_FORM_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_LINKS_IN_DESCRIPTION = 5;
 
 const fallbackContact = `please email us at ${siteConfig.email}`;
@@ -39,14 +35,7 @@ const fallbackContact = `please email us at ${siteConfig.email}`;
  */
 export async function submitInquiry(_previous: InquiryState, formData: FormData): Promise<InquiryState> {
   // 1. Bot traps. Bots get a believable success so they don't adapt; nothing is stored.
-  const honeypot = formData.get(HONEYPOT_FIELD);
-  const rawStartedAt = formData.get("startedAt");
-  // Missing/empty must not count as "a long time ago" (Number("") is 0).
-  const startedAt = typeof rawStartedAt === "string" && /^\d{10,16}$/.test(rawStartedAt) ? Number(rawStartedAt) : NaN;
-  const elapsed = Date.now() - startedAt;
-  if ((typeof honeypot === "string" && honeypot.trim() !== "") || !(elapsed >= MIN_FILL_TIME_MS && elapsed <= MAX_FORM_AGE_MS)) {
-    return { status: "success", reference: "received" };
-  }
+  if (looksAutomated(formData)) return { status: "success", reference: "received" };
 
   // 2. Normalise and validate.
   const kind = formData.get("kind") === "sponsor" ? "sponsor" : "service";
@@ -124,14 +113,17 @@ export async function submitInquiry(_previous: InquiryState, formData: FormData)
       description,
       contactMethod: contactMethod as NewLead["contactMethod"],
       phone,
-      sourcePath: /^\/[a-z0-9\-/]{0,199}$/i.test(rawSource) ? rawSource : null,
+      sourcePath: safeSourcePath(rawSource),
       ipHash,
       userAgent: cleanText(requestHeaders.get("user-agent")).slice(0, 300) || null,
     };
     const { id, reference } = await createLead(lead);
 
     // 5. Notify after the response is sent, so email latency or outages never block the visitor.
-    after(() => notifyNewLead(id, reference, lead));
+    after(async () => {
+      await notifyNewLead(id, reference, lead);
+      await logActivity("website", "lead.created", `New ${kind === "sponsor" ? "sponsor" : "service"} inquiry from ${fullName} (${company})`, `/admin/leads/${id}`);
+    });
 
     return { status: "success", reference };
   } catch (error) {

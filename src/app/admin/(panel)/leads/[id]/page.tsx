@@ -1,14 +1,18 @@
-import { ArrowLeft, ExternalLink, Mail, MessageCircle, Phone } from "lucide-react";
+import { ArrowLeft, Briefcase, ExternalLink, Mail, MessageCircle, Phone } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
+import { linkButton } from "@/components/admin/admin-kit";
 import { Card } from "@/components/admin/admin-ui";
 import { LeadNoteForm, LeadStatusForm } from "@/components/admin/lead-forms";
 import { DatabaseSetupNotice, LeadStatusBadge } from "@/components/admin/lead-ui";
 import { Skeleton } from "@/components/shared/skeleton";
 import { BUDGET_OPTIONS, CONTACT_METHOD_OPTIONS, categoryLabel, optionLabel } from "@/lib/inquiry-options";
+import { hasRole } from "@/lib/auth/roles";
+import { requireAdmin } from "@/lib/auth/session";
+import { findClientByLead } from "@/lib/server/clients";
 import { isDatabaseConfigured } from "@/lib/server/mongodb";
 import { getLead, getLeadNotes } from "@/lib/server/leads";
 import { formatDateTime } from "@/lib/utils";
@@ -64,7 +68,9 @@ async function LeadDetail({ params }: { params: PageProps<"/admin/leads/[id]">["
   const { id } = await params;
   const lead = await getLead(id);
   if (!lead) notFound();
-  const notes = await getLeadNotes(lead.id);
+  const session = await requireAdmin();
+  const [notes, client] = await Promise.all([getLeadNotes(lead.id), findClientByLead(lead.id)]);
+  const canWrite = hasRole(session.role, "admin");
   const phoneDigits = lead.phone?.replace(/\D/g, "");
 
   return (
@@ -97,14 +103,14 @@ async function LeadDetail({ params }: { params: PageProps<"/admin/leads/[id]">["
 
           <Card title={`Internal notes (${notes.length})`}>
             <div className="space-y-5 p-5">
-              <LeadNoteForm leadId={lead.id} />
+              {canWrite && <LeadNoteForm leadId={lead.id} />}
               {notes.length > 0 && (
                 <ol className="space-y-3 border-t border-border pt-5">
                   {notes.map((note) => (
                     <li key={note.id} className="rounded-xl border border-border bg-surface-muted/40 p-4">
                       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">{note.body}</p>
                       <p className="mt-2 text-xs text-muted-foreground">
-                        <time dateTime={note.createdAt}>{formatDateTime(note.createdAt)}</time>
+                        {note.author} · <time dateTime={note.createdAt}>{formatDateTime(note.createdAt)}</time>
                       </p>
                     </li>
                   ))}
@@ -115,9 +121,30 @@ async function LeadDetail({ params }: { params: PageProps<"/admin/leads/[id]">["
         </div>
 
         <div className="space-y-6">
-          <Card title="Status">
-            <div className="p-5">
-              <LeadStatusForm leadId={lead.id} status={lead.status} />
+          {canWrite && (
+            <Card title="Status">
+              <div className="p-5">
+                <LeadStatusForm leadId={lead.id} status={lead.status} />
+              </div>
+            </Card>
+          )}
+
+          <Card title="Client">
+            <div className="space-y-3 p-5">
+              {client ? (
+                <Link href={`/admin/clients/${client.id}`} className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+                  <Briefcase className="h-4 w-4" aria-hidden="true" /> {client.name} is a client
+                </Link>
+              ) : canWrite ? (
+                <>
+                  <p className="text-sm text-muted-foreground">Deal agreed? Turn this lead into a client to start invoicing (monthly or one-off).</p>
+                  <Link href={`/admin/clients/new?lead=${lead.id}`} className={`${linkButton} w-full`}>
+                    <Briefcase className="h-4 w-4" aria-hidden="true" /> Convert to client
+                  </Link>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Not a client yet.</p>
+              )}
             </div>
           </Card>
 
