@@ -1,11 +1,13 @@
 import { Clock, Mail, Megaphone, PenLine, Rocket, Workflow } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DemoForm } from "@/components/shared/demo-form";
+import { ServerForm } from "@/components/shared/server-form";
 import { PageHero } from "@/components/shared/page-hero";
 import { Reveal } from "@/components/shared/reveal";
 import { SocialIcon } from "@/components/shared/social-icons";
 import { siteConfig, socialLinks } from "@/data/site";
+import { submitContactMessage } from "@/lib/actions/public-forms";
+import { CONTACT_TOPICS, FORM_LIMITS } from "@/lib/form-options";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
@@ -35,15 +37,11 @@ export default function ContactPage() {
           <h2 className="text-xl font-semibold text-foreground">Send a message</h2>
           <p className="mt-1 text-sm text-muted-foreground">Fields marked * are required.</p>
           <div className="mt-6">
-            <DemoForm
+            <ServerForm
+              action={submitContactMessage}
               submitLabel="Send message"
-              successTitle="Your message is ready to go"
-              demoNote={
-                <>
-                  This is a demo: the message passed validation but <strong className="text-foreground">was not sent</strong>. Until the
-                  contact backend is connected, please email us at {siteConfig.email}.
-                </>
-              }
+              successTitle="Thanks — your message has been received"
+              successNote="We read every message and aim to reply within a few business days."
               footer={
                 <>
                   By contacting us you agree to our{" "}
@@ -54,16 +52,10 @@ export default function ContactPage() {
                 </>
               }
               fields={[
-                { name: "name", label: "Your name", required: true, autoComplete: "name", half: true, placeholder: "Jane Doe" },
-                { name: "email", label: "Email", type: "email", required: true, autoComplete: "email", half: true, placeholder: "jane@company.com" },
-                {
-                  name: "topic",
-                  label: "Topic",
-                  type: "select",
-                  required: true,
-                  options: ["General question", "Correction or update", "Tool listing", "Partnership", "Advertising", "Other"],
-                },
-                { name: "message", label: "Message", type: "textarea", required: true, minLength: 20, placeholder: "How can we help?" },
+                { name: "name", label: "Your name", required: true, autoComplete: "name", half: true, placeholder: "Jane Doe", maxLength: FORM_LIMITS.name },
+                { name: "email", label: "Email", type: "email", required: true, autoComplete: "email", half: true, placeholder: "jane@company.com", maxLength: FORM_LIMITS.email },
+                { name: "topic", label: "Topic", type: "select", required: true, options: CONTACT_TOPICS },
+                { name: "message", label: "Message", type: "textarea", required: true, minLength: FORM_LIMITS.messageMin, maxLength: FORM_LIMITS.message, placeholder: "How can we help?" },
               ]}
             />
           </div>

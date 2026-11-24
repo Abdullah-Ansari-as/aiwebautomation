@@ -349,9 +349,12 @@ sudo -u webapp -H nano /srv/webaiautomation/.env.production.local
 MONGODB_URI=mongodb://webaiautomation_app:<app-password-hex>@127.0.0.1:27017/webaiautomation?authSource=webaiautomation
 MONGODB_DB_NAME=webaiautomation
 
-# Admin login
+# Admin login (super admin = ADMIN_EMAIL + ADMIN_PASSWORD; team members are added in /admin/team)
 AUTH_SECRET=<openssl rand -hex 24>
+ADMIN_EMAIL=<your login email>
 ADMIN_PASSWORD=<openssl rand -hex 24>
+ADMIN_NAME=<your name, optional>
+APP_URL=https://webaiautomation.com
 
 # Email notifications (Resend)
 RESEND_API_KEY=<re_... key from resend.com>
@@ -360,7 +363,10 @@ LEADS_NOTIFY_EMAIL=<inbox that should receive new leads>
 
 # Public (read at BUILD time; rebuild after changing)
 NEXT_PUBLIC_WHATSAPP_NUMBER=<digits only, with country code, e.g. 15551234567>
+NEXT_PUBLIC_BOOKING_URL=<Calendly / Cal.com link, optional>
 ```
+
+> **Using MongoDB Atlas instead of a self-hosted MongoDB?** Skip the MongoDB install steps, create a database user in Atlas (role: *readWrite* on `webaiautomation`, or *Atlas admin* just for the first `npm run db:setup`), allow the server's public IP under **Atlas → Network Access**, and set `MONGODB_URI=mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/webaiautomation?retryWrites=true&w=majority`. Use a hex password (no URL-encoding needed). Backups are then handled by Atlas.
 
 - Next.js loads `.env.production.local` automatically for `next build` and `next start`. The `npm run db:setup` and `email:test` scripts read it too.
 - `EMAIL_FROM` must use a domain you have verified in Resend (**Resend → Domains**). Add the DNS records Resend shows you. The `Name <address>` form shown parses correctly.

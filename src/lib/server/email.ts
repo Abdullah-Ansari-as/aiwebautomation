@@ -42,9 +42,11 @@ interface SendEmailInput {
   replyTo?: string;
   /** Resend de-duplicates sends with the same key for 24 hours. */
   idempotencyKey?: string;
+  /** Extra email headers, e.g. List-Unsubscribe. */
+  headers?: Record<string, string>;
 }
 
-export async function sendEmail(config: Extract<EmailConfig, { ok: true }>, { to, subject, html, text, replyTo, idempotencyKey }: SendEmailInput): Promise<void> {
+export async function sendEmail(config: Extract<EmailConfig, { ok: true }>, { to, subject, html, text, replyTo, idempotencyKey, headers }: SendEmailInput): Promise<void> {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -59,6 +61,7 @@ export async function sendEmail(config: Extract<EmailConfig, { ok: true }>, { to
       html,
       text,
       ...(replyTo && normalizeEmail(replyTo) && { reply_to: replyTo }),
+      ...(headers && { headers }),
     }),
     signal: AbortSignal.timeout(10_000),
   });

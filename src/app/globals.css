@@ -330,3 +330,22 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Invoices print cleanly (and save as PDF) in both themes. */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  .invoice-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  .invoice-sheet,
+  .invoice-sheet * {
+    color: #111 !important;
+    border-color: #ddd !important;
+  }
+}

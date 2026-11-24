@@ -80,3 +80,15 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
 export function formatDateTime(iso: string): string {
   return `${dateTimeFormatter.format(new Date(iso))} UTC`;
 }
+
+const dayFormatter = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" });
+
+/** Formats a full ISO timestamp as a UTC calendar day, e.g. "Nov 18, 2026". */
+export function formatDay(iso: string): string {
+  return dayFormatter.format(new Date(iso));
+}
+
+/** ISO timestamp → "YYYY-MM-DD" for <input type="date">. */
+export function toDateInput(iso: string | Date): string {
+  return (typeof iso === "string" ? new Date(iso) : iso).toISOString().slice(0, 10);
+}

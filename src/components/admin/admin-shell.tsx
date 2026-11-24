@@ -1,74 +1,147 @@
 "use client";
 
 import { AnimatePresence, m } from "framer-motion";
-import { BarChart3, ExternalLink, FolderTree, Inbox, LayoutDashboard, LogOut, Menu, Newspaper, Settings, Sparkles, TriangleAlert, UserRoundPlus, X } from "lucide-react";
+import {
+  BarChart3,
+  Briefcase,
+  ExternalLink,
+  FileText,
+  Inbox,
+  LayoutDashboard,
+  Library,
+  LogOut,
+  Mail,
+  Menu,
+  Settings,
+  Sparkles,
+  UserCog,
+  UserRoundPlus,
+  Users,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { logout } from "@/lib/actions/admin-auth";
+import { roleLabel, type AdminRole } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
-import { useAdmin } from "./admin-store";
 
-const nav = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin/leads", label: "Leads", icon: UserRoundPlus },
-  { href: "/admin/tools", label: "AI Tools", icon: Sparkles },
-  { href: "/admin/categories", label: "Categories", icon: FolderTree },
-  { href: "/admin/articles", label: "Articles", icon: Newspaper },
-  { href: "/admin/submissions", label: "Submissions", icon: Inbox },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+export interface AdminShellUser {
+  name: string;
+  email: string;
+  role: AdminRole;
+}
+
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; superadminOnly?: boolean };
+
+const navGroups: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Business",
+    items: [
+      { href: "/admin", label: "Overview", icon: LayoutDashboard },
+      { href: "/admin/leads", label: "Leads", icon: UserRoundPlus },
+      { href: "/admin/clients", label: "Clients", icon: Briefcase },
+      { href: "/admin/invoices", label: "Invoices", icon: FileText },
+    ],
+  },
+  {
+    label: "Inbox",
+    items: [
+      { href: "/admin/messages", label: "Messages", icon: Inbox },
+      { href: "/admin/submissions", label: "Tool submissions", icon: Sparkles },
+      { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
+    ],
+  },
+  {
+    label: "Website",
+    items: [
+      { href: "/admin/content", label: "Content", icon: Library },
+      { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      { href: "/admin/team", label: "Team", icon: Users, superadminOnly: true },
+      { href: "/admin/settings", label: "Settings", icon: Settings },
+      { href: "/admin/account", label: "My account", icon: UserCog },
+    ],
+  },
 ];
 
-function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarNav({ user, badges, onNavigate }: { user: AdminShellUser; badges: Record<string, number>; onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { submissions } = useAdmin();
-  const pending = submissions.filter((s) => s.status === "pending").length;
   return (
-    <ul className="space-y-1">
-      {nav.map((item) => {
-        const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
-        return (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              onClick={onNavigate}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                active ? "text-primary" : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
-              )}
-            >
-              {active && <m.span layoutId="admin-nav-active" className="absolute inset-0 rounded-xl bg-primary-soft" transition={{ type: "spring", stiffness: 400, damping: 34 }} />}
-              <item.icon className="relative h-4 w-4" aria-hidden="true" />
-              <span className="relative flex-1">{item.label}</span>
-              {item.href === "/admin/submissions" && pending > 0 && (
-                <span className="relative rounded-full bg-primary px-2 py-0.5 text-[0.7rem] font-semibold text-white dark:text-primary-foreground">{pending}</span>
-              )}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="space-y-6">
+      {navGroups.map((group) => (
+        <div key={group.label}>
+          <p className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{group.label}</p>
+          <ul className="mt-2 space-y-0.5">
+            {group.items
+              .filter((item) => !item.superadminOnly || user.role === "superadmin")
+              .map((item) => {
+                const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+                const badge = badges[item.href] ?? 0;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                        active ? "text-primary" : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
+                      )}
+                    >
+                      {active && <m.span layoutId="admin-nav-active" className="absolute inset-0 rounded-xl bg-primary-soft" transition={{ type: "spring", stiffness: 400, damping: 34 }} />}
+                      <item.icon className="relative h-4 w-4" aria-hidden="true" />
+                      <span className="relative flex-1">{item.label}</span>
+                      {badge > 0 && (
+                        <span className={cn("relative rounded-full px-2 py-0.5 text-[0.7rem] font-semibold", item.href === "/admin/invoices" ? "bg-danger text-white" : "bg-primary text-white dark:text-primary-foreground")}>
+                          {badge}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }
 
-export function AdminShell({ children }: { children: ReactNode }) {
+function SidebarFooter({ user }: { user: AdminShellUser }) {
+  return (
+    <div className="space-y-1 border-t border-border pt-4">
+      <div className="px-3 pb-2">
+        <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {roleLabel(user.role)} · {user.email}
+        </p>
+      </div>
+      <Link href="/" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground">
+        <ExternalLink className="h-4 w-4" aria-hidden="true" /> View website
+      </Link>
+    </div>
+  );
+}
+
+export function AdminShell({ user, badges, children }: { user: AdminShellUser; badges: Record<string, number>; children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background lg:grid lg:grid-cols-[16rem_1fr]">
-      <aside className="sticky top-0 hidden h-screen flex-col border-r border-border bg-surface px-4 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen flex-col overflow-y-auto border-r border-border bg-surface px-4 py-5 lg:flex">
         <Logo className="px-2" />
-        <p className="mt-1 px-2 text-xs text-muted-foreground">Admin dashboard</p>
-        <nav aria-label="Admin" className="mt-8 flex-1">
-          <SidebarNav />
+        <p className="mt-1 px-2 text-xs text-muted-foreground">Business dashboard</p>
+        <nav aria-label="Admin" className="mt-6 flex-1">
+          <SidebarNav user={user} badges={badges} />
         </nav>
-        <Link href="/" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground">
-          <ExternalLink className="h-4 w-4" aria-hidden="true" /> View website
-        </Link>
+        <SidebarFooter user={user} />
       </aside>
 
       <AnimatePresence>
@@ -83,7 +156,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 340, damping: 36 }}
-              className="absolute inset-y-0 left-0 flex w-72 flex-col border-r border-border bg-surface px-4 py-5"
+              className="absolute inset-y-0 left-0 flex w-72 flex-col overflow-y-auto border-r border-border bg-surface px-4 py-5"
             >
               <div className="flex items-center justify-between">
                 <Logo className="px-2" />
@@ -91,12 +164,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <nav aria-label="Admin mobile" className="mt-8 flex-1">
-                <SidebarNav onNavigate={() => setOpen(false)} />
+              <nav aria-label="Admin mobile" className="mt-6 flex-1">
+                <SidebarNav user={user} badges={badges} onNavigate={() => setOpen(false)} />
               </nav>
-              <Link href="/" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-surface-muted">
-                <ExternalLink className="h-4 w-4" aria-hidden="true" /> View website
-              </Link>
+              <SidebarFooter user={user} />
             </m.aside>
           </div>
         )}
@@ -108,10 +179,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <button type="button" onClick={() => setOpen(true)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border lg:hidden" aria-label="Open admin menu">
               <Menu className="h-5 w-5" />
             </button>
-            <p className="inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-xs font-medium text-foreground">
-              <TriangleAlert className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
-              <span className="hidden sm:inline">Leads are live · other sections are a demo with sample data that isn&apos;t saved</span>
-              <span className="sm:hidden">Leads live · rest is demo</span>
+            <p className="hidden text-sm text-muted-foreground sm:block">
+              Signed in as <span className="font-medium text-foreground">{user.name}</span>
+              <span className="ml-2 rounded-full border border-primary/20 bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary">{roleLabel(user.role)}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -132,14 +202,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function AdminPageHeader({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
+export function AdminPageHeader({ title, description, action }: { title: string; description?: ReactNode; action?: ReactNode }) {
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
+      <div className="min-w-0">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h1>
         {description && <p className="mt-1.5 text-muted-foreground">{description}</p>}
       </div>
-      {action}
+      {action && <div className="flex shrink-0 flex-wrap gap-2">{action}</div>}
     </div>
   );
 }

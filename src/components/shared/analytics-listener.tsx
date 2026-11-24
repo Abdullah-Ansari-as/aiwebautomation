@@ -1,7 +1,8 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { track } from "@/lib/analytics";
+import { sendBeacon, track } from "@/lib/analytics";
 
 /**
  * One delegated click listener that turns `data-track` attributes on any
@@ -33,5 +34,19 @@ export function TrackOnMount({ event, props }: { event: string; props?: Record<s
     track(event, props);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per mount
   }, []);
+  return null;
+}
+
+/**
+ * Records a cookieless page view on every client-side navigation. Render it
+ * inside <Suspense> (it reads the current pathname).
+ */
+export function PageViewTracker() {
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!pathname) return;
+    const referrer = document.referrer && !document.referrer.startsWith(window.location.origin) ? document.referrer : "";
+    sendBeacon({ type: "pageview", path: pathname, referrer });
+  }, [pathname]);
   return null;
 }

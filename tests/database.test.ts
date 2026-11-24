@@ -7,7 +7,9 @@ const auth = vi.hoisted(() => ({ allowed: true }));
 vi.mock("@/lib/auth/session", () => ({
   requireAdmin: async () => {
     if (!auth.allowed) throw Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;replace;/admin/login;307;" });
+    return { userId: "superadmin", role: "superadmin", email: "owner@example.com", name: "Test Admin" };
   },
+  actorLabel: (s: { name: string; email: string }) => `${s.name} (${s.email})`,
 }));
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 

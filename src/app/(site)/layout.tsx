@@ -1,6 +1,7 @@
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
-import { AnalyticsListener } from "@/components/shared/analytics-listener";
+import { Suspense } from "react";
+import { AnalyticsListener, PageViewTracker } from "@/components/shared/analytics-listener";
 import { buildSearchIndex } from "@/lib/search-index";
 
 /** Public website chrome: header with global search, main content, footer. */
@@ -13,6 +14,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       </main>
       <Footer />
       <AnalyticsListener />
+      <Suspense fallback={null}>
+        <PageViewTracker />
+      </Suspense>
     </>
   );
 }

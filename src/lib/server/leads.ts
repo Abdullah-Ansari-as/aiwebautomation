@@ -204,7 +204,7 @@ export async function getLeadNotes(leadId: string): Promise<LeadNote[]> {
 
 /** Returns false when the lead doesn't exist. */
 export async function updateLeadStatus(id: string, status: LeadStatus): Promise<boolean> {
-  await requireAdmin();
+  await requireAdmin("admin");
   const _id = toObjectId(id);
   if (!_id) return false;
   const collection = await leadsCollection();
@@ -214,7 +214,7 @@ export async function updateLeadStatus(id: string, status: LeadStatus): Promise<
 
 /** Returns false when the lead doesn't exist. */
 export async function addLeadNote(leadId: string, body: string, author = "admin"): Promise<boolean> {
-  await requireAdmin();
+  await requireAdmin("admin");
   const _id = toObjectId(leadId);
   if (!_id) return false;
   const now = new Date();

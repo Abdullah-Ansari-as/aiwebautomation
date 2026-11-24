@@ -1,40 +1,58 @@
 "use client";
 
 import { AnimatePresence, m } from "framer-motion";
-import { ArrowRight, CircleCheck, Info, Loader2, Mail } from "lucide-react";
-import { useId, useState, type FormEvent } from "react";
+import { ArrowRight, CircleCheck, Loader2, Mail } from "lucide-react";
+import Link from "next/link";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { subscribeNewsletter } from "@/lib/actions/public-forms";
+import type { PublicFormState } from "@/lib/actions/types";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-type Status = "idle" | "submitting" | "demo-success";
-
 /**
- * Newsletter sign-up UI. No email provider is connected yet, so submission
- * only validates the address and shows an explicit demo message — nothing is
- * sent or stored.
+ * Newsletter sign-up. Saves the subscriber in MongoDB (with explicit consent)
+ * and, when email is configured, sends a welcome email with an unsubscribe link.
  */
 export function Newsletter({ variant = "section" }: { variant?: "section" | "inline" }) {
   const id = useId();
+  const mountedAt = useRef(0);
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [status, setStatus] = useState<Status>("idle");
+  const [consent, setConsent] = useState(false);
+  const [clientError, setClientError] = useState("");
+  const [state, formAction, pending] = useActionState<PublicFormState, FormData>(subscribeNewsletter, { status: "idle" });
+  const done = state.status === "success";
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  useEffect(() => {
+    mountedAt.current = Date.now();
+  }, []);
+
+  useEffect(() => {
+    if (state.status === "success") track("newsletter_signup", { variant });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to a new action result
+  }, [state]);
+
+  const submit = (formData: FormData) => {
     if (!EMAIL_PATTERN.test(email.trim())) {
-      setError("Please enter a valid email address.");
+      setClientError("Please enter a valid email address.");
       return;
     }
-    setError("");
-    setStatus("submitting");
-    // Simulated latency so the interaction feels real; no network request is made.
-    window.setTimeout(() => setStatus("demo-success"), 700);
+    if (!consent) {
+      setClientError("Please tick the box to confirm you'd like the newsletter.");
+      return;
+    }
+    setClientError("");
+    formData.set("startedAt", String(mountedAt.current || Date.now()));
+    formData.set("sourcePath", window.location.pathname);
+    formAction(formData);
   };
+
+  const error = clientError || (state.status === "error" ? state.message : "");
 
   const form = (
     <AnimatePresence mode="wait" initial={false}>
-      {status === "demo-success" ? (
+      {done ? (
         <m.div
           key="success"
           initial={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -44,25 +62,18 @@ export function Newsletter({ variant = "section" }: { variant?: "section" | "inl
           className="rounded-2xl border border-success/30 bg-success/10 p-5 text-left"
         >
           <p className="flex items-center gap-2 font-semibold text-foreground">
-            <CircleCheck className="h-5 w-5 text-success" aria-hidden="true" /> Thanks — that address looks good!
+            <CircleCheck className="h-5 w-5 text-success" aria-hidden="true" /> You&apos;re subscribed — thank you!
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            <strong className="text-foreground">Demo mode:</strong> the newsletter service isn&apos;t connected yet, so your email
-            was <strong className="text-foreground">not</strong> sent or stored.
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setStatus("idle");
-              setEmail("");
-            }}
-            className="mt-3 text-sm font-medium text-primary hover:underline"
-          >
-            Try another address
-          </button>
+          <p className="mt-2 text-sm text-muted-foreground">Look out for the next weekly brief. Every email includes a one-click unsubscribe link.</p>
         </m.div>
       ) : (
-        <m.form key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onSubmit={submit} noValidate>
+        <m.form key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} action={submit} noValidate className="relative">
+          <div aria-hidden="true" className="absolute -left-[10000px] top-0 h-px w-px overflow-hidden">
+            <label>
+              Leave this field empty
+              <input type="text" name="hp_extra_info" tabIndex={-1} autoComplete="off" defaultValue="" />
+            </label>
+          </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <label htmlFor={`${id}-email`} className="sr-only">
@@ -71,16 +82,18 @@ export function Newsletter({ variant = "section" }: { variant?: "section" | "inl
               <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               <input
                 id={`${id}-email`}
+                name="email"
                 type="email"
                 autoComplete="email"
                 value={email}
+                maxLength={254}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  if (error) setError("");
+                  if (clientError) setClientError("");
                 }}
                 placeholder="you@company.com"
                 aria-invalid={Boolean(error)}
-                aria-describedby={error ? `${id}-error` : `${id}-note`}
+                aria-describedby={error ? `${id}-error` : undefined}
                 className={cn(
                   "h-12 w-full rounded-xl border bg-surface pl-10 pr-4 text-sm text-foreground outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus:border-primary focus:ring-4 focus:ring-primary/15 focus-visible:outline-none",
                   error ? "border-danger" : "border-border-strong",
@@ -89,10 +102,10 @@ export function Newsletter({ variant = "section" }: { variant?: "section" | "inl
             </div>
             <button
               type="submit"
-              disabled={status === "submitting"}
+              disabled={pending}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-medium text-white transition-all hover:bg-primary-hover active:scale-[0.97] disabled:opacity-70 dark:text-primary-foreground"
             >
-              {status === "submitting" ? (
+              {pending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
                 <>
@@ -101,13 +114,29 @@ export function Newsletter({ variant = "section" }: { variant?: "section" | "inl
               )}
             </button>
           </div>
-          {error ? (
+          <label className="mt-3 flex items-start gap-2 text-left text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              name="consent"
+              value="yes"
+              checked={consent}
+              onChange={(e) => {
+                setConsent(e.target.checked);
+                if (clientError) setClientError("");
+              }}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--primary)]"
+            />
+            <span>
+              Yes, send me the weekly brief. Unsubscribe any time. See our{" "}
+              <Link href="/privacy-policy" className="text-primary hover:underline">
+                privacy policy
+              </Link>
+              .
+            </span>
+          </label>
+          {error && (
             <p id={`${id}-error`} role="alert" className="mt-2 text-left text-sm text-danger">
               {error}
-            </p>
-          ) : (
-            <p id={`${id}-note`} className="mt-3 flex items-center gap-1.5 text-left text-xs text-muted-foreground">
-              <Info className="h-3.5 w-3.5" aria-hidden="true" /> Preview only — subscriptions aren&apos;t saved until our email service is connected.
             </p>
           )}
         </m.form>

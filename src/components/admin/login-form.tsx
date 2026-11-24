@@ -2,17 +2,37 @@
 
 import { CircleAlert, Loader2, LogIn } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { login, type LoginState } from "@/lib/actions/admin-auth";
 import { fieldClass } from "./admin-ui";
 
 export function LoginForm() {
   const next = useSearchParams().get("next") ?? "/admin";
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, {});
+  // Controlled, so the email survives React's form reset after a failed attempt.
+  const [email, setEmail] = useState("");
 
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="next" value={next} />
+      <div>
+        <label htmlFor="admin-email" className="mb-1.5 block text-sm font-medium text-foreground">
+          Email
+        </label>
+        <input
+          id="admin-email"
+          name="email"
+          type="email"
+          autoComplete="username"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoFocus
+          aria-invalid={Boolean(state.error)}
+          aria-describedby={state.error ? "admin-login-error" : undefined}
+          className={`${fieldClass} h-11`}
+        />
+      </div>
       <div>
         <label htmlFor="admin-password" className="mb-1.5 block text-sm font-medium text-foreground">
           Password
@@ -23,7 +43,6 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          autoFocus
           aria-invalid={Boolean(state.error)}
           aria-describedby={state.error ? "admin-login-error" : undefined}
           className={`${fieldClass} h-11`}

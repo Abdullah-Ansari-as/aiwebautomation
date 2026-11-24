@@ -1,6 +1,6 @@
 import "server-only";
-import { siteConfig } from "@/data/site";
 import { BUDGET_OPTIONS, CONTACT_METHOD_OPTIONS, categoryLabel, optionLabel } from "@/lib/inquiry-options";
+import { getAppUrl } from "./app-url";
 import { escapeHtml, getEmailConfig, sendEmail } from "./email";
 import { claimLeadNotification, setLeadNotificationStatus, type NewLead } from "./leads";
 import { logServerError } from "./log";
@@ -31,7 +31,7 @@ async function sendLeadNotification(id: string, reference: string, lead: NewLead
   }
 
   const kindLabel = lead.kind === "sponsor" ? "Sponsor inquiry" : "Service inquiry";
-  const adminUrl = `${siteConfig.url}/admin/leads/${id}`;
+  const adminUrl = `${getAppUrl()}/admin/leads/${id}`;
   const rows: [string, string][] = [
     ["Reference", reference],
     ["Name", lead.fullName],

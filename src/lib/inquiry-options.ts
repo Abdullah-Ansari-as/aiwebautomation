@@ -9,6 +9,9 @@ export type InquiryKind = (typeof INQUIRY_KINDS)[number];
 
 /** Service categories a client can request a quote for. Values are stable ids. */
 export const SERVICE_OPTIONS = [
+  { value: "ai-lead-response", label: "AI Lead Response plan (monthly)" },
+  { value: "automation-care", label: "Automation Care plan (monthly)" },
+  { value: "growth-partner", label: "Growth Partner plan (monthly)" },
   { value: "ai-automation", label: "AI Automation Services" },
   { value: "n8n-workflows", label: "n8n Workflow Development" },
   { value: "make-zapier", label: "Make.com & Zapier Integrations" },
@@ -28,8 +31,11 @@ export const SPONSOR_OPTIONS = [
   { value: "sponsor-other", label: "Something else" },
 ] as const;
 
-/** Budget ranges are aligned with the indicative pricing packages. */
+/** Budget ranges are aligned with the monthly plans and one-time project packages. */
 export const BUDGET_OPTIONS = [
+  { value: "monthly-under-300", label: "Monthly plan: under $300/mo" },
+  { value: "monthly-300-600", label: "Monthly plan: $300 – $600/mo" },
+  { value: "monthly-600-plus", label: "Monthly plan: $600+/mo" },
   { value: "75-199", label: "$75 – $199" },
   { value: "199-399", label: "$199 – $399" },
   { value: "399-1000", label: "$399 – $1,000" },

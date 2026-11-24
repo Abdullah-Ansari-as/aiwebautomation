@@ -1,6 +1,6 @@
 import { MongoClient } from "mongodb";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { TEST_ADMIN_PASSWORD, dropTestDatabase, setupTestDatabase } from "./support/test-env";
+import { TEST_ADMIN_EMAIL, TEST_ADMIN_PASSWORD, dropTestDatabase, setupTestDatabase } from "./support/test-env";
 
 const request = vi.hoisted(() => ({
   cookies: new Map<string, { value: string }>(),
@@ -43,8 +43,9 @@ async function databaseComesBack() {
   rateLimit.rateLimitTestHooks.retryDatabaseNow();
 }
 
-const form = (password: string) => {
+const form = (password: string, email = TEST_ADMIN_EMAIL) => {
   const fd = new FormData();
+  fd.set("email", email);
   fd.set("password", password);
   return fd;
 };
@@ -103,16 +104,19 @@ describe("rate limiting when MongoDB is unavailable", () => {
 
     const answers: string[] = [];
     for (let i = 0; i < 9; i++) answers.push((await login({}, form(`wrong-guess-${i}-xxxx`))).error ?? "");
-    expect(answers.slice(0, 8).every((a) => a === "Incorrect password.")).toBe(true);
+    expect(answers.slice(0, 8).every((a) => a === "Incorrect email or password.")).toBe(true);
     expect(answers[8]).toMatch(/Too many sign-in attempts/);
 
     // The correct password is refused too until the window ends, and no session is created.
     expect((await login({}, form(TEST_ADMIN_PASSWORD))).error).toMatch(/Too many/);
     expect(request.cookies.size).toBe(0);
 
-    // Another IP is limited independently, as before.
+    // Another IP is limited independently for other accounts (team members can't be
+    // verified while the database is down, so they get a "temporarily unavailable" answer)…
     request.ip = "192.0.2.51";
-    expect((await login({}, form("another-wrong-guess"))).error).toBe("Incorrect password.");
+    expect((await login({}, form("another-wrong-guess", "someone@example.com"))).error).toMatch(/temporarily unavailable/);
+    // …but the account that had 8 failed attempts stays protected from every IP.
+    expect((await login({}, form(TEST_ADMIN_PASSWORD))).error).toMatch(/Too many/);
   }, 20_000);
 
   it("retries MongoDB after the fallback period and restores shared counters", async () => {

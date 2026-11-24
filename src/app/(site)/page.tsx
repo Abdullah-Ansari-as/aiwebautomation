@@ -12,7 +12,7 @@ import { articles, getArticleSummaries } from "@/data/articles";
 import { workflowExamples } from "@/data/automation";
 import { getArticleCategory, toolCategories } from "@/data/categories";
 import { guides } from "@/data/guides";
-import { pricingPackages, services } from "@/data/services";
+import { monthlyPlans, pricingPackages, services } from "@/data/services";
 import { siteConfig } from "@/data/site";
 import { tools } from "@/data/tools";
 import { utilities } from "@/data/utilities";
@@ -52,7 +52,7 @@ export default function HomePage() {
       <FeaturedToolsSection tools={getFeaturedTools().slice(0, 8)} />
       <UtilitiesSection utilities={utilities.slice(0, 6)} />
       <WhySection />
-      <ServicesSection services={services} fromPrice={Math.min(...pricingPackages.map((p) => p.fromPrice))} />
+      <ServicesSection services={services} fromPrice={Math.min(...pricingPackages.map((p) => p.fromPrice))} monthlyFrom={Math.min(...monthlyPlans.map((p) => p.monthlyPrice))} />
       <LatestArticlesSection
         items={latest.map((a) => ({
           href: `/blog/${a.slug}`,

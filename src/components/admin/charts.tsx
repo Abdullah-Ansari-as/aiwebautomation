@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Lightweight, dependency-free charts for the admin demo. Single-series
+ * Lightweight, dependency-free charts for the admin dashboard. Single-series
  * charts use one hue (the primary token, validated for both themes), text
  * stays in text tokens, and every chart offers a table view.
  */
@@ -26,6 +26,7 @@ const compact = (n: number) => (n >= 10000 ? `${Math.round(n / 1000)}K` : n >= 1
 const full = (n: number) => n.toLocaleString("en-US");
 
 function niceMax(value: number): number {
+  if (!(value > 0)) return 1;
   const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
   const steps = [1, 2, 2.5, 5, 10];
   for (const s of steps) if (s * magnitude >= value) return s * magnitude;
@@ -101,7 +102,19 @@ export function ChartFrame({
 }
 
 /** Single-series line chart with area wash, end label and crosshair tooltip. */
-export function LineChart({ data, valueLabel }: { data: { label: string; value: number }[]; valueLabel: string }) {
+export function LineChart({
+  data,
+  valueLabel,
+  tooltipPrefix = "Week of",
+  formatValue = full,
+  axisFormat = compact,
+}: {
+  data: { label: string; value: number }[];
+  valueLabel: string;
+  tooltipPrefix?: string;
+  formatValue?: (n: number) => string;
+  axisFormat?: (n: number) => string;
+}) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
   const height = 260;
@@ -129,7 +142,7 @@ export function LineChart({ data, valueLabel }: { data: { label: string; value: 
           width={width}
           height={height}
           role="img"
-          aria-label={`${valueLabel} over ${data.length} weeks, from ${full(data[0].value)} to ${full(last.value)}`}
+          aria-label={`${valueLabel} over ${data.length} periods, from ${formatValue(data[0].value)} to ${formatValue(last.value)}`}
           onMouseMove={(e) => onMove(e.clientX, e.currentTarget.getBoundingClientRect())}
           onMouseLeave={() => setHover(null)}
           onTouchStart={(e) => onMove(e.touches[0].clientX, e.currentTarget.getBoundingClientRect())}
@@ -140,12 +153,12 @@ export function LineChart({ data, valueLabel }: { data: { label: string; value: 
             <g key={t}>
               <line x1={margin.left} x2={margin.left + innerW} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeWidth={1} />
               <text x={margin.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums">
-                {compact(t)}
+                {axisFormat(t)}
               </text>
             </g>
           ))}
           {data.map((d, i) =>
-            i % 2 === 0 || i === data.length - 1 ? (
+            i % Math.max(1, Math.ceil(data.length / 8)) === 0 || i === data.length - 1 ? (
               <text key={d.label} x={x(i)} y={height - 8} textAnchor="middle" className="fill-muted-foreground text-[11px]">
                 {d.label}
               </text>
@@ -165,7 +178,7 @@ export function LineChart({ data, valueLabel }: { data: { label: string; value: 
           />
           <circle cx={x(data.length - 1)} cy={y(last.value)} r={4} fill="var(--primary)" stroke="var(--surface)" strokeWidth={2} />
           <text x={x(data.length - 1) + 10} y={y(last.value)} dy="0.32em" className="fill-foreground text-[12px] font-semibold tabular-nums">
-            {compact(last.value)}
+            {axisFormat(last.value)}
           </text>
           {hover !== null && (
             <g pointerEvents="none">
@@ -185,9 +198,12 @@ export function LineChart({ data, valueLabel }: { data: { label: string; value: 
             className="pointer-events-none absolute z-10 rounded-lg border border-border bg-surface-elevated px-3 py-2 text-xs shadow-lift"
             style={{ left: Math.min(Math.max(x(hover) - 60, 0), width - 130), top: Math.max(0, y(data[hover].value) - 64) }}
           >
-            <p className="text-muted-foreground">Week of {data[hover].label}</p>
+            <p className="text-muted-foreground">
+              {tooltipPrefix ? `${tooltipPrefix} ` : ""}
+              {data[hover].label}
+            </p>
             <p className="mt-0.5 font-semibold tabular-nums text-foreground">
-              {full(data[hover].value)} {valueLabel.toLowerCase()}
+              {formatValue(data[hover].value)} {valueLabel.toLowerCase()}
             </p>
           </m.div>
         )}
@@ -199,8 +215,8 @@ export function LineChart({ data, valueLabel }: { data: { label: string; value: 
 /** Horizontal single-series bar chart (HTML) — bars ≤ 24px, rounded data end, value at tip. */
 export function BarList({ data, valueLabel }: { data: { label: string; value: number }[]; valueLabel: string }) {
   const [hover, setHover] = useState<number | null>(null);
-  const max = Math.max(...data.map((d) => d.value));
-  const total = data.reduce((s, d) => s + d.value, 0);
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const total = Math.max(1, data.reduce((s, d) => s + d.value, 0));
   return (
     <ul className="space-y-3" aria-label={`${valueLabel} by item`}>
       {data.map((d, i) => (

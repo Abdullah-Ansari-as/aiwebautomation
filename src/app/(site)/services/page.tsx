@@ -1,4 +1,4 @@
-import { ArrowRight, Check, CircleCheck, Clock3, FileText, KeyRound, Mail, MessageCircle, ShieldCheck } from "lucide-react";
+import { ArrowRight, CalendarCheck, Check, CircleCheck, Clock3, FileText, KeyRound, Mail, MessageCircle, Repeat, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InquiryForm } from "@/components/services/inquiry-form";
@@ -11,10 +11,10 @@ import { JsonLd } from "@/components/shared/json-ld";
 import { PageHero } from "@/components/shared/page-hero";
 import { Reveal, Stagger, StaggerItem } from "@/components/shared/reveal";
 import { SectionHeader } from "@/components/shared/section-header";
-import { pricingPackages, processSteps, serviceFaqs, serviceQuoteHref, services, useCases } from "@/data/services";
+import { monthlyPlans, pricingPackages, processSteps, serviceFaqs, serviceQuoteHref, services, useCases } from "@/data/services";
 import { siteConfig } from "@/data/site";
 import { trackAttrs } from "@/lib/analytics";
-import { whatsappLink } from "@/lib/contact";
+import { bookingLink, whatsappLink } from "@/lib/contact";
 import { faqSchema, servicesSchema } from "@/lib/schema";
 import { createMetadata } from "@/lib/seo";
 import { getToolsBySlugs } from "@/lib/tools";
@@ -30,6 +30,7 @@ export const metadata: Metadata = createMetadata({
 });
 
 const promises = [
+  { icon: Repeat, text: "Monthly plans — cancel with 30 days' notice" },
   { icon: FileText, text: "Fixed written quote before work starts" },
   { icon: KeyRound, text: "Built in accounts you own" },
   { icon: ShieldCheck, text: "Documentation and handover included" },
@@ -37,6 +38,7 @@ const promises = [
 
 export default function ServicesPage() {
   const whatsapp = whatsappLink("Hi WebAIAutomation, I'd like to discuss an automation project.");
+  const booking = bookingLink();
 
   return (
     <>
@@ -57,9 +59,14 @@ export default function ServicesPage() {
           <LinkButton href="#quote" size="lg" {...trackAttrs("consultation_click", { location: "services-hero" })}>
             Request a quote <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </LinkButton>
+          {booking && (
+            <LinkButton href={booking} external size="lg" variant="outline" {...trackAttrs("booking_click", { location: "services-hero" })}>
+              <CalendarCheck className="h-4 w-4" aria-hidden="true" /> Book a free call
+            </LinkButton>
+          )}
           <WhatsAppButton location="services-hero" />
-          <LinkButton href="#pricing" size="lg" variant="ghost">
-            See pricing
+          <LinkButton href="#monthly-plans" size="lg" variant="ghost">
+            See monthly plans
           </LinkButton>
         </div>
         <ul className="mt-8 flex flex-col gap-3 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-6">
@@ -162,13 +169,63 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="scroll-mt-24 border-y border-border/60 bg-surface-muted/40 py-20" aria-labelledby="pricing-heading">
+      {/* Monthly plans */}
+      <section id="monthly-plans" className="scroll-mt-24 border-y border-border/60 bg-surface-muted/40 py-20" aria-labelledby="plans-heading">
         <div className="container-site">
           <SectionHeader
             align="center"
-            eyebrow="Pricing"
-            title={<span id="pricing-heading">Simple, indicative starting prices</span>}
+            eyebrow="Monthly plans"
+            title={<span id="plans-heading">Done-for-you automation, every month</span>}
+            description="One predictable monthly price. We build it, host it, keep it running and keep improving it — so you never have to think about it."
+          />
+          <Stagger className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
+            {monthlyPlans.map((plan) => (
+              <StaggerItem key={plan.id}>
+                <div className={cn("relative flex h-full flex-col rounded-[1.5rem] border bg-surface p-7 shadow-soft", plan.highlighted ? "border-primary/50 ring-4 ring-primary/10" : "border-border")}>
+                  {plan.highlighted && (
+                    <span className="absolute -top-3 left-7 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white dark:text-primary-foreground">Most popular</span>
+                  )}
+                  <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{plan.bestFor}</p>
+                  <p className="mt-6 flex items-baseline gap-1.5">
+                    <span className="text-4xl font-semibold tracking-tight text-foreground">${plan.monthlyPrice}</span>
+                    <span className="text-sm text-muted-foreground">USD / month</span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">{plan.setupFee ? `+ $${plan.setupFee} one-time setup` : "No setup fee"}</p>
+                  <ul className="mt-6 flex-1 space-y-3">
+                    {plan.includes.map((item) => (
+                      <li key={item} className="flex gap-2.5 text-sm text-foreground/90">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <LinkButton
+                    href={serviceQuoteHref(plan.id, plan.budget)}
+                    variant={plan.highlighted ? "primary" : "outline"}
+                    className="mt-8 w-full"
+                    {...trackAttrs("consultation_click", { location: "monthly-plans", plan: plan.id })}
+                  >
+                    Start with {plan.name}
+                  </LinkButton>
+                </div>
+              </StaggerItem>
+            ))}
+          </Stagger>
+          <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-relaxed text-muted-foreground">
+            Prices in USD; we also invoice in GBP, AUD and EUR. Pay each month by card or bank transfer from the secure link on your invoice. No long contracts —
+            change or cancel your plan with 30 days&apos; notice.
+          </p>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="scroll-mt-24 py-20" aria-labelledby="pricing-heading">
+        <div className="container-site">
+          <SectionHeader
+            align="center"
+            eyebrow="One-time projects"
+            title={<span id="pricing-heading">Prefer a one-off build? Simple starting prices</span>}
             description="Every project is different, so these are starting points rather than fixed prices. You'll receive a written quote with the exact scope and price before anything is built."
           />
           <Stagger className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">

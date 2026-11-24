@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DemoForm } from "@/components/shared/demo-form";
+import { ServerForm } from "@/components/shared/server-form";
 import { PageHero } from "@/components/shared/page-hero";
 import { Reveal } from "@/components/shared/reveal";
 import { toolCategories } from "@/data/categories";
+import { submitToolSuggestion } from "@/lib/actions/public-forms";
+import { FORM_LIMITS, SUBMISSION_PRICING, SUBMISSION_RELATIONSHIPS } from "@/lib/form-options";
 import { createMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createMetadata({
@@ -33,30 +35,27 @@ export default function SubmitToolPage() {
       />
       <div className="container-site grid gap-10 py-14 lg:grid-cols-[1fr_20rem]">
         <Reveal className="rounded-[1.5rem] border border-border bg-surface p-6 shadow-soft sm:p-8">
-          <DemoForm
+          <ServerForm
+            action={submitToolSuggestion}
             submitLabel="Submit for review"
-            successTitle="Submission validated"
-            demoNote={
-              <>
-                This is a demo: your submission <strong className="text-foreground">was not sent or stored</strong>. Once the submissions
-                backend is connected, entries will appear in the editors&apos; review queue.
-              </>
-            }
+            successTitle="Thanks — your suggestion is in our review queue"
+            successNote="Our editors review every submission against the listing criteria. We'll email you if we have questions or once a decision is made."
             fields={[
-              { name: "toolName", label: "Tool name", required: true, half: true, placeholder: "e.g. Acme Writer" },
-              { name: "website", label: "Website URL", type: "url", required: true, half: true, placeholder: "https://" },
-              { name: "category", label: "Category", type: "select", required: true, half: true, options: toolCategories.map((c) => c.name) },
-              { name: "pricing", label: "Pricing model", type: "select", required: true, half: true, options: ["Free", "Freemium", "Paid"] },
+              { name: "toolName", label: "Tool name", required: true, half: true, placeholder: "e.g. Acme Writer", maxLength: FORM_LIMITS.toolName },
+              { name: "website", label: "Website URL", type: "url", required: true, half: true, placeholder: "https://", maxLength: FORM_LIMITS.website },
+              { name: "category", label: "Category", type: "select", required: true, half: true, options: toolCategories.map((c) => ({ value: c.slug, label: c.name })) },
+              { name: "pricing", label: "Pricing model", type: "select", required: true, half: true, options: SUBMISSION_PRICING },
               {
                 name: "description",
                 label: "What does it do?",
                 type: "textarea",
                 required: true,
-                minLength: 40,
+                minLength: FORM_LIMITS.submissionDescriptionMin,
+                maxLength: FORM_LIMITS.submissionDescription,
                 placeholder: "Describe the main features and who it's for.",
               },
               { name: "email", label: "Your email", type: "email", required: true, autoComplete: "email", half: true, hint: "Only used to contact you about this submission." },
-              { name: "relationship", label: "Your relationship to the tool", type: "select", half: true, options: ["Founder / team member", "User", "Other"] },
+              { name: "relationship", label: "Your relationship to the tool", type: "select", half: true, options: SUBMISSION_RELATIONSHIPS },
             ]}
           />
         </Reveal>
